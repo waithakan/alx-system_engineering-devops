@@ -1,2 +1,2 @@
-#!/bin/bas
-BEST= "school"
+#!/bin/bash
+echo BEST="School"
