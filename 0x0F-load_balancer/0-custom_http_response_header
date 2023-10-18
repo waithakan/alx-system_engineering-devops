@@ -1,32 +1,26 @@
 #!/usr/bin/env bash
-# Configure web-02 to be identical to web-01
-# The name of the custom HTTP header must be X-Served-By
-apt-get -y update
-apt-get -y install nginx
-ufw allow 'Nginx HTTP'
-sudo chown -R $USER:$USER /var/www
-sudo chmod -R 755 /var/www/
-echo 'Hello World!' > /var/www/html/index.nginx-debian.html
-echo "Ceci n'est pas une page" > /var/www/html/404.html
-server_config=\
-"server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
-	root /var/www/html;
-	index index.html index.htm index.nginx-debian.html;
-	server_name _;
-	add_header X-Served-By \$hostname;
-	location / {
-		try_files \$uri \$uri/ =404;
-	}
-	if (\$request_filename ~ redirect_me){
-		rewrite ^ https://youtube.com permanent;
-	}
-	error_page 404 /404.html;
-	location = /404.html {
-		internal;
-	}
-}"
+#Web-01 http response header configuration
 
-echo "$server_config" > /etc/nginx/sites-enabled/default
-service nginx start
+#updating packages
+sudo apt-get -y update
+sudo apt-get -y install nginx
+
+#Creating index page
+echo "Hello World!" | sudo tee  /var/www/html/index.html
+
+#Redirection configuration
+string_for_replacement="server_name _;\n\trewrite ^\/redirect_me https:\/\/github.com\/waithakan permanent;"
+
+sudo sed -i "s/server_name _;/$string_for_replacement/" /etc/nginx/sites-enabled/default
+
+# Creating 404 error page
+echo "Ceci n'est pas une page" | sudo tee /var/www/html/404.html
+
+# Custom http response header
+sudo sed -i "/server_name _/a add_header X-Served-By $HOSTNAME;" /etc/nginx/sites-enabled/default
+
+# test for errors
+sudo nginx -t
+
+# start nginx
+sudo service nginx restart
